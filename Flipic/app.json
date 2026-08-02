@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Flipic",
+    "slug": "flipic",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0F172A",
+    "scheme": "flipic",
+    "splash": {
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.flipic.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Flipic uses your camera to scan thrift items and estimate resale value."
+      }
+    },
+    "android": {
+      "package": "com.flipic.app",
+      "permissions": ["CAMERA"],
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A"
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Flipic uses your camera to scan thrift items and estimate resale value."
+        }
+      ]
+    ]
+  }
+}
