@@ -8,7 +8,7 @@ import { getOfferedServices } from '../data/trades';
 import { generateDraft, makeItem } from '../services/quoteGenerator';
 import { colors, radius } from '../theme';
 import { confirm, notify } from '../utils/dialogs';
-import { computeTotals, formatMoney, lineTotal, num } from '../utils/money';
+import { computeTotals, formatMoney, lineTotal, num, round2 } from '../utils/money';
 
 const TYPE_META = {
   labor: { label: 'Labor', icon: 'time-outline', color: colors.info },
@@ -16,7 +16,7 @@ const TYPE_META = {
   fee: { label: 'Fee', icon: 'pricetag-outline', color: colors.sub },
 };
 
-export default function QuoteEditorScreen({ profile, initialQuote, isNew, onSave, onCancel }) {
+export default function QuoteEditorScreen({ profile, initialQuote, isNew, customers = [], onSave, onCancel }) {
   const [quote, setQuote] = useState(initialQuote);
   const [pickedIds, setPickedIds] = useState([]);
   const [emergency, setEmergency] = useState(false);
@@ -33,6 +33,10 @@ export default function QuoteEditorScreen({ profile, initialQuote, isNew, onSave
   };
   const setCustomer = (patch) => set({ customer: { ...quote.customer, ...patch } });
   const setItem = (id, patch) => set({ items: quote.items.map((item) => (item.id === id ? { ...item, ...patch } : item)) });
+  // Typing what a material costs you prices it with your markup; the price
+  // can still be overridden afterwards.
+  const setCost = (id, cost) =>
+    setItem(id, cost.trim() === '' ? { cost } : { cost, unitPrice: String(round2(num(cost) * (1 + num(profile.markupPct) / 100))) });
   const removeItem = (id) => set({ items: quote.items.filter((item) => item.id !== id) });
   const addItem = (type) =>
     set({ items: [...quote.items, makeItem(type, '', 1, type === 'labor' ? num(profile.hourlyRate) : 0)] });
@@ -68,7 +72,7 @@ export default function QuoteEditorScreen({ profile, initialQuote, isNew, onSave
       notify('Who is this quote for?', 'Add the customer’s name.');
       return;
     }
-    if (!quote.items.some((item) => lineTotal(item) > 0)) {
+    if (!quote.items.some((item) => !item.optional && lineTotal(item) > 0)) {
       notify('Nothing to quote yet', 'Generate the quote or add at least one priced line item.');
       return;
     }
@@ -82,6 +86,16 @@ export default function QuoteEditorScreen({ profile, initialQuote, isNew, onSave
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <SectionTitle>Customer</SectionTitle>
           <Card>
+            {isNew && customers.length > 0 && !quote.customer.name ? (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={styles.smallLabel}>Recent customers</Text>
+                <View style={styles.chips}>
+                  {customers.slice(0, 6).map((customer) => (
+                    <Chip key={customer.name} label={customer.name} icon="person-outline" onPress={() => setCustomer(customer)} />
+                  ))}
+                </View>
+              </View>
+            ) : null}
             <Field label="Name" placeholder="Customer or company name" value={quote.customer.name} onChangeText={(name) => setCustomer({ name })} />
             <Field label="Job address" placeholder="Optional" value={quote.customer.address} onChangeText={(address) => setCustomer({ address })} />
             <View style={styles.row}>
@@ -144,7 +158,8 @@ export default function QuoteEditorScreen({ profile, initialQuote, isNew, onSave
                         <Ionicons name={meta.icon} size={13} color={meta.color} />
                         <Text style={[styles.typeText, { color: meta.color }]}>{meta.label}</Text>
                       </View>
-                      <Text style={styles.itemTotal}>{formatMoney(lineTotal(item), cur)}</Text>
+                      {item.optional ? <Text style={styles.optionalTag}>Optional</Text> : null}
+                      <Text style={[styles.itemTotal, item.optional && { color: colors.sub }]}>{item.optional ? '+ ' : ''}{formatMoney(lineTotal(item), cur)}</Text>
                       <Pressable onPress={() => removeItem(item.id)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Remove ${item.description || meta.label}`}>
                         <Ionicons name="trash-outline" size={19} color={colors.faint} />
                       </Pressable>
@@ -160,7 +175,19 @@ export default function QuoteEditorScreen({ profile, initialQuote, isNew, onSave
                     />
                     <View style={styles.row}>
                       <Field style={styles.flexNoMargin} label={item.type === 'labor' ? 'Hours' : 'Qty'} keyboardType="decimal-pad" value={item.qty} onChangeText={(qty) => setItem(item.id, { qty })} selectTextOnFocus />
+                      {item.type === 'material' ? (
+                        <Field style={styles.flexNoMargin} label="Your cost" prefix={cur} placeholder="—" keyboardType="decimal-pad" value={item.cost || ''} onChangeText={(cost) => setCost(item.id, cost)} selectTextOnFocus />
+                      ) : null}
                       <Field style={styles.flexNoMargin} label={item.type === 'labor' ? 'Rate' : 'Price each'} prefix={cur} keyboardType="decimal-pad" value={item.unitPrice} onChangeText={(unitPrice) => setItem(item.id, { unitPrice })} selectTextOnFocus />
+                    </View>
+                    <View style={styles.optionalRow}>
+                      <Text style={styles.optionalLabel}>Offer as an optional upgrade</Text>
+                      <Switch
+                        accessibilityLabel={`Offer ${item.description || meta.label} as an optional upgrade`}
+                        value={Boolean(item.optional)}
+                        onValueChange={(optional) => setItem(item.id, { optional })}
+                        trackColor={{ true: colors.primary }}
+                      />
                     </View>
                   </Card>
                 );
@@ -188,6 +215,15 @@ export default function QuoteEditorScreen({ profile, initialQuote, isNew, onSave
               {totals.tax > 0 && <SumRow label={profile.taxLabel || 'Tax'} value={formatMoney(totals.tax, cur)} />}
               <SumRow label="Total" value={formatMoney(totals.total, cur)} bold />
               {totals.deposit > 0 && <SumRow label="Deposit to book" value={formatMoney(totals.deposit, cur)} />}
+              {totals.optionalTotal > 0 && <SumRow label="Optional upgrades offered" value={`+ ${formatMoney(totals.optionalTotal, cur)}`} />}
+            </View>
+            <View style={styles.owner}>
+              <View style={styles.ownerHead}>
+                <Ionicons name="eye-off-outline" size={15} color={colors.success} />
+                <Text style={styles.ownerTitle}>Your numbers — never shown to the customer</Text>
+              </View>
+              <SumRow label="Materials cost you" value={formatMoney(totals.materialsCost, cur)} />
+              <SumRow label="You keep after materials" value={`${formatMoney(totals.profit, cur)}  ·  ${totals.margin}%`} />
             </View>
           </Card>
 
@@ -243,6 +279,12 @@ const styles = StyleSheet.create({
   itemTotal: { flex: 1, textAlign: 'right', fontSize: 15, fontWeight: '700', color: colors.ink },
   itemDesc: { fontSize: 15, fontWeight: '600', color: colors.ink, paddingVertical: 8, minHeight: 40 },
   addBtn: { flex: 1, minHeight: 44, paddingHorizontal: 8 },
+  optionalTag: { fontSize: 11, fontWeight: '700', color: colors.primary, backgroundColor: colors.primarySoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, overflow: 'hidden' },
+  optionalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  optionalLabel: { fontSize: 13, color: colors.sub, fontWeight: '600' },
+  owner: { marginTop: 12, backgroundColor: colors.successSoft, borderRadius: radius.sm, padding: 12 },
+  ownerHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  ownerTitle: { fontSize: 12, fontWeight: '700', color: colors.success },
   sumBlock: { marginTop: 14, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 8 },
   sumRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   sumRowBold: { borderTopWidth: 1, borderTopColor: colors.line, marginTop: 6, paddingTop: 10 },

@@ -32,10 +32,10 @@ export default function SettingsScreen({ profile, plan, usage, onBack, onEditPro
 
         <SectionTitle>Plan</SectionTitle>
         <Card>
-          <Text style={styles.name}>{plan.pro ? 'TradeQuote Pro' : 'Free plan'}</Text>
+          <Text style={styles.name}>{plan.pro ? 'QuotePilot Pro' : 'Free plan'}</Text>
           <Text style={styles.detail}>
             {plan.pro
-              ? `Unlimited quotes, your branding, no TradeQuote footer.${plan.demo ? ' (Demo unlock — no charge was made.)' : ''}`
+              ? `Unlimited quotes, invoices, your branding, no QuotePilot footer.${plan.demo ? ' (Demo unlock — no charge was made.)' : ''}`
               : `${quotesUsedThisMonth(usage)} of ${FREE_QUOTES_PER_MONTH} free quotes used this month.`}
           </Text>
           {plan.pro ? (

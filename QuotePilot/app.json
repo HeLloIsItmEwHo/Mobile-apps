@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "TradeQuote",
-    "slug": "tradequote",
+    "name": "QuotePilot",
+    "slug": "quotepilot",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tradequote.app"
+      "bundleIdentifier": "com.quotepilot.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +17,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.tradequote.app"
+      "package": "com.quotepilot.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -27,11 +27,11 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "TradeQuote uses your photos so you can add your business logo to quotes."
+          "photosPermission": "QuotePilot uses your photos so you can add your business logo to quotes."
         }
       ],
       "expo-font"
     ],
-    "scheme": "tradequote"
+    "scheme": "quotepilot"
   }
 }

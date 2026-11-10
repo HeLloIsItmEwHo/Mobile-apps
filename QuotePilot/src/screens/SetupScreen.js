@@ -59,6 +59,8 @@ export const DEFAULT_PROFILE = {
   brandColor: BRAND_COLORS[0],
   tone: 'friendly',
   nextNumber: 1001,
+  invoiceDueDays: '14',
+  nextInvoice: 1001,
 };
 
 const MAX_LOGO_BASE64 = 900000; // ~650 KB image; keeps device storage happy
@@ -296,7 +298,9 @@ export default function SetupScreen({ initialProfile, isPro, onDone, onCancel, o
                 <Field style={{ flex: 1 }} label="Quote valid for" suffix="days" keyboardType="number-pad" value={profile.validDays} onChangeText={(validDays) => set({ validDays })} />
               </View>
 
-              <Text style={styles.question}>Payment terms</Text>
+              <Field label="Invoices are due within" suffix="days" keyboardType="number-pad" value={profile.invoiceDueDays} onChangeText={(invoiceDueDays) => set({ invoiceDueDays })} />
+
+              <Text style={[styles.question, { marginTop: 8 }]}>Payment terms</Text>
               <View style={styles.chips}>
                 {PAYMENT_TERMS.map((terms) => (
                   <Chip key={terms} label={terms.replace(/\.$/, '')} selected={profile.paymentTerms === terms} onPress={() => set({ paymentTerms: terms })} />

@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEYS = {
-  profile: 'tq.profile.v1',
-  logo: 'tq.logo.v1', // kept apart from the profile: it is a large base64 string
-  quotes: 'tq.quotes.v1',
-  plan: 'tq.plan.v1',
-  usage: 'tq.usage.v1',
+  profile: 'qp.profile.v1',
+  logo: 'qp.logo.v1', // kept apart from the profile: it is a large base64 string
+  quotes: 'qp.quotes.v1',
+  plan: 'qp.plan.v1',
+  usage: 'qp.usage.v1',
 };
 
 async function read(key, fallback) {

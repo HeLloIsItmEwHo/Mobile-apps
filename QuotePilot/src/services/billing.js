@@ -11,14 +11,14 @@ export const BILLING_LIVE = false;
 export const FREE_QUOTES_PER_MONTH = 3;
 
 export const PLANS = [
-  { id: 'annual', label: 'Annual', price: '$119.99', per: 'year', note: '$10 / month · 2 months free', badge: 'Best value' },
-  { id: 'monthly', label: 'Monthly', price: '$14.99', per: 'month', note: 'Cancel anytime' },
+  { id: 'annual', label: 'Annual', price: '$1,649.90', per: 'year', note: '$137.49 / month · 2 months free', badge: 'Best value' },
+  { id: 'monthly', label: 'Monthly', price: '$164.99', per: 'month', note: 'Cancel anytime' },
 ];
 
 export const PRO_FEATURES = [
   ['infinite', 'Unlimited quotes', 'No monthly cap — quote every lead.'],
-  ['image', 'Your logo & brand color', 'Quotes that look like they came from a big firm.'],
-  ['ribbon', 'No TradeQuote footer', 'Remove our branding from every PDF.'],
+  ['receipt', 'One-tap invoices', 'Turn an accepted quote into an invoice and track who has paid.'],
+  ['image', 'Your logo & brand color', 'Documents that look like they came from a big firm, with no QuotePilot footer.'],
   ['copy', 'Duplicate past quotes', 'Re-quote repeat jobs in seconds.'],
 ];
 

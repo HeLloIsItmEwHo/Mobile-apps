@@ -17,8 +17,10 @@ export function newId(prefix = 'id') {
   return `${prefix}-${Date.now().toString(36)}-${idCounter}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function makeItem(type, description = '', qty = 1, unitPrice = 0, unit = type === 'labor' ? 'hr' : 'ea') {
-  return { id: newId('item'), type, description, qty: String(qty), unit, unitPrice: String(unitPrice) };
+// `cost` is the owner's own unit cost for a material (never shown to the
+// customer); `optional` marks an add-on that is offered but not totalled.
+export function makeItem(type, description = '', qty = 1, unitPrice = 0, cost = '') {
+  return { id: newId('item'), type, description, qty: String(qty), unit: type === 'labor' ? 'hr' : 'ea', unitPrice: String(unitPrice), cost: String(cost), optional: false };
 }
 
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -90,7 +92,7 @@ export function generateDraft(profile, { description = '', pickedIds = [], emerg
     const suffix = count > 1 ? ` (×${count})` : '';
     items.push(makeItem('labor', `${service.name}${suffix} — labor`, round2(service.hours * count), rate));
     service.mats.forEach((material) => {
-      items.push(makeItem('material', material.description, count, round2(material.cost * markup)));
+      items.push(makeItem('material', material.description, count, round2(material.cost * markup), material.cost));
     });
     scopeLines.push(`• ${service.name}${suffix}: ${service.scope}`);
   });

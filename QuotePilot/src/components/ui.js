@@ -110,8 +110,13 @@ export const STATUS = {
   declined: { label: 'Declined', fg: colors.danger, bg: colors.dangerSoft },
 };
 
+const INVOICE_STATUS = {
+  invoiced: { label: 'Invoiced', fg: '#7C3AED', bg: '#F0E9FE' },
+  paid: { label: 'Paid', fg: colors.success, bg: colors.successSoft },
+};
+
 export function StatusPill({ status }) {
-  const meta = STATUS[status] || STATUS.draft;
+  const meta = STATUS[status] || INVOICE_STATUS[status] || STATUS.draft;
   return (
     <View style={[styles.pill, { backgroundColor: meta.bg }]}>
       <Text style={[styles.pillText, { color: meta.fg }]}>{meta.label}</Text>

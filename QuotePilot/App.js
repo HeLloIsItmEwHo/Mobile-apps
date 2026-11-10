@@ -96,6 +96,29 @@ export default function App() {
     setStack((current) => [...current.filter((r) => r.name !== 'editor' && r.name !== 'preview'), { name: 'preview', quoteId: quote.id }]);
   };
 
+  const patchQuote = (id, patch) => updateQuotes(quotes.map((q) => (q.id === id ? { ...q, ...patch, updatedAt: new Date().toISOString() } : q)));
+
+  // Returns true when the invoice was created (false when the paywall opened).
+  const createInvoice = (quote) => {
+    if (!plan.pro) {
+      push({ name: 'paywall', reason: 'invoice' });
+      return false;
+    }
+    const number = profile.nextInvoice || 1001;
+    patchQuote(quote.id, {
+      invoice: { number: `INV-${number}`, issuedAt: new Date().toISOString(), dueDays: String(profile.invoiceDueDays || '14'), depositPaid: false, paidAt: null },
+    });
+    updateProfile({ ...profile, nextInvoice: number + 1 });
+    return true;
+  };
+
+  // Distinct past customers, most recent first, for one-tap reuse.
+  const customers = [];
+  [...quotes].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).forEach((q) => {
+    const name = (q.customer.name || '').trim();
+    if (name && !customers.some((c) => c.name.toLowerCase() === name.toLowerCase())) customers.push({ ...q.customer, name });
+  });
+
   const duplicateQuote = (quote) => {
     if (!plan.pro) {
       push({ name: 'paywall', reason: 'duplicate' });
@@ -107,6 +130,8 @@ export default function App() {
       id: newId('quote'),
       number: `Q-${profile.nextNumber || 1001}`,
       status: 'draft',
+      sentAt: null,
+      invoice: null,
       createdAt: now,
       updatedAt: now,
       items: quote.items.map((item) => ({ ...item, id: newId('item') })),
@@ -146,6 +171,7 @@ export default function App() {
         profile={profile}
         initialQuote={route.quote}
         isNew={route.isNew}
+        customers={customers}
         onCancel={pop}
         onSave={(quote) => saveQuote(quote, route.isNew)}
       />
@@ -159,7 +185,9 @@ export default function App() {
         isPro={plan.pro}
         onBack={pop}
         onEdit={() => push({ name: 'editor', quote, isNew: false })}
-        onStatus={(status) => updateQuotes(quotes.map((q) => (q.id === quote.id ? { ...q, status } : q)))}
+        onStatus={(status) => patchQuote(quote.id, { status, sentAt: status === 'sent' ? quote.sentAt || new Date().toISOString() : quote.sentAt })}
+        onCreateInvoice={() => createInvoice(quote)}
+        onInvoiceChange={(patch) => patchQuote(quote.id, { invoice: { ...quote.invoice, ...patch } })}
         onDuplicate={() => duplicateQuote(quote)}
         onDelete={() => {
           setStack(HOME);

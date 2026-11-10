@@ -26,7 +26,7 @@ export default function PaywallScreen({ reason, onClose, onPurchased }) {
   const restorePurchase = async () => {
     const plan = await restore();
     if (plan) onPurchased(plan);
-    else notify('Nothing to restore', 'We couldn’t find a previous TradeQuote Pro purchase on this account.');
+    else notify('Nothing to restore', 'We couldn’t find a previous QuotePilot Pro purchase on this account.');
   };
 
   return (
@@ -35,12 +35,12 @@ export default function PaywallScreen({ reason, onClose, onPurchased }) {
         <Ionicons name="close" size={26} color="#fff" />
       </Pressable>
       <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.badge}><Ionicons name="star" size={14} color="#fff" /><Text style={styles.badgeText}>TRADEQUOTE PRO</Text></View>
+        <View style={styles.badge}><Ionicons name="star" size={14} color="#fff" /><Text style={styles.badgeText}>QUOTEPILOT PRO</Text></View>
         <Text style={styles.title}>Win more jobs with quotes that look the part</Text>
         <Text style={styles.lead}>
           {reason === 'limit'
             ? `You’ve used your ${FREE_QUOTES_PER_MONTH} free quotes this month. Go Pro to keep quoting.`
-            : 'One extra job a year pays for it many times over.'}
+            : 'Faster quotes, better-looking paperwork and invoices that get paid.'}
         </Text>
 
         {PRO_FEATURES.map(([icon, heading, detail]) => (

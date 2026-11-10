@@ -1,4 +1,4 @@
-# TradeQuote
+# QuotePilot
 
 Professional quotes for trades and contractors — plumbers, HVAC techs, electricians, roofers, painters, landscapers, handymen and more. Describe the job in a sentence, get a priced, branded quote, and send it as a PDF.
 
@@ -7,18 +7,21 @@ Built with Expo (SDK 58) / React Native. Runs on iOS, Android and web.
 ## How it works
 
 1. **Setup (5 short screens)** — the owner tells the app what they do:
-   trade → services offered → pricing (hourly rate, call-out fee, materials markup, tax) → business details (licence, insurance, years trading) → quote preferences (tone, deposit, validity, payment terms, warranty, branding).
-2. **New quote** — enter the customer, describe the job ("replace 2 toilets and fix a leak, after hours") or tap services. The generator matches the description to the owner's services, picks up quantities and urgency, and prices labor and materials with *their* rates and markup.
-3. **Edit** — every line, the scope, wording and terms are editable.
-4. **Send** — a clean PDF through the share sheet (email, text, WhatsApp…). Track each quote as Draft / Sent / Accepted / Declined; the home screen shows pending value, won value and win rate.
+   trade → services offered → pricing (hourly rate, call-out fee, materials markup, tax) → business details (licence, insurance, years trading) → quote preferences (tone, deposit, validity, invoice terms, payment terms, warranty, branding).
+2. **New quote** — pick a recent customer or enter a new one, describe the job ("replace 2 toilets and fix a leak, after hours") or tap services. The generator matches the description to the owner's services, picks up quantities and urgency, and prices labor and materials with *their* rates and markup.
+3. **Edit** — every line, the scope, wording and terms are editable. Any line can be offered as an **optional upgrade** (listed on the quote, kept out of the total). An owner-only panel shows what the materials cost and what's left after them.
+4. **Send** — a clean PDF through the share sheet (email, text, WhatsApp…). Track each quote as Draft / Sent / Accepted / Declined.
+5. **Follow up** — quotes with no reply after 3 days are flagged, with a ready-written follow-up message.
+6. **Invoice** — turn an accepted quote into an invoice, credit the deposit, and mark it paid. The home screen shows value awaiting reply, won, unpaid invoices and win rate, with search and filters.
 
 ## Business model
 
-| | Free | Pro — $14.99/mo or $119.99/yr |
+| | Free | Pro — $164.99/mo or $1,649.90/yr |
 |---|---|---|
 | Quotes | 3 per month | Unlimited |
-| Logo & brand color on quotes | — | ✓ |
-| "Created with TradeQuote" footer | shown | removed |
+| Invoices | — | ✓ |
+| Logo & brand color on documents | — | ✓ |
+| "Created with QuotePilot" footer | shown | removed |
 | Duplicate past quotes | — | ✓ |
 
 Limits, prices and feature list live in `src/services/billing.js`.
@@ -28,7 +31,7 @@ Limits, prices and feature list live in `src/services/billing.js`.
 ## Getting started
 
 ```bash
-cd TradeQuote
+cd QuotePilot
 npm install
 npx expo start        # scan the QR code with Expo Go, or press i / a / w
 ```
@@ -36,7 +39,7 @@ npx expo start        # scan the QR code with Expo Go, or press i / a / w
 ## Project structure
 
 ```
-TradeQuote/
+QuotePilot/
 ├── App.js                         # State, persistence, route stack
 └── src/
     ├── data/trades.js             # Trade catalog: services, hours, materials, warranties, exclusions
@@ -44,7 +47,7 @@ TradeQuote/
     │   ├── SetupScreen.js         # Onboarding wizard (also used to edit the profile)
     │   ├── HomeScreen.js          # Quote list, stats, free-plan banner
     │   ├── QuoteEditorScreen.js   # Describe job → generate → edit lines and wording
-    │   ├── QuotePreviewScreen.js  # Document preview, status, send PDF
+    │   ├── QuotePreviewScreen.js  # Quote / invoice preview, status, follow-up, send PDF
     │   ├── PaywallScreen.js
     │   └── SettingsScreen.js
     ├── services/
