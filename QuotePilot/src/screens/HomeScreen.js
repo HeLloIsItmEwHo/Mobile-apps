@@ -13,7 +13,7 @@ import { computeTotals, formatMoney, invoiceDue, needsFollowUp } from '../utils/
 const FILTERS = ['all', 'draft', 'sent', 'accepted', 'declined', 'unpaid'];
 const FILTER_LABELS = { all: 'All', unpaid: 'Unpaid' };
 
-export default function HomeScreen({ profile, quotes, plan, usage, onNew, onOpen, onSettings, onUpgrade }) {
+export default function HomeScreen({ profile, quotes, plan, usage, syncState, onNew, onOpen, onSettings, onUpgrade }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const cur = profile.currency || '$';
@@ -45,7 +45,10 @@ export default function HomeScreen({ profile, quotes, plan, usage, onNew, onOpen
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.biz} numberOfLines={1}>{profile.businessName}</Text>
-          <Text style={styles.trade}>{tradeLabel(profile)}{plan.pro ? ' · Pro' : ''}</Text>
+          <Text style={styles.trade}>
+            {tradeLabel(profile)}{plan.pro ? ' · Pro' : ''}
+            {syncState && syncState.status === 'offline' ? ' · Offline' : syncState && syncState.pending && syncState.status !== 'syncing' ? ' · Not yet backed up' : ''}
+          </Text>
         </View>
         <Pressable onPress={onSettings} hitSlop={10} accessibilityRole="button" accessibilityLabel="Settings" style={styles.iconBtn}>
           <Ionicons name="settings-outline" size={22} color={colors.ink} />

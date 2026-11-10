@@ -27,6 +27,11 @@ The project is plain JavaScript. Run `npx expo export --platform web` to confirm
 - This app does not use Expo Router. Navigation is a small route stack held in state in `App.js`; screens live in `src/screens/` and receive data and callbacks as props.
 - The paywall is rendered as an overlay so the screen beneath stays mounted.
 
+## Backend
+
+- `server/` is a separate Node package (accounts, sync, Stripe billing) with its own README and tests. Whether an account is Pro is decided only by the server; never grant it client-side.
+- All local changes go through `commit()` in `App.js` so they are queued for sync.
+
 ## Building with EAS
 
 Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.

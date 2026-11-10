@@ -1,25 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Card, Header, SectionTitle } from '../components/ui';
+import { Button, Card, Field, Header, SectionTitle } from '../components/ui';
 import { getOfferedServices, tradeLabel } from '../data/trades';
-import { FREE_QUOTES_PER_MONTH, quotesUsedThisMonth } from '../services/billing';
+import { FREE_QUOTES_PER_MONTH, describePlan, quotesUsedThisMonth } from '../services/billing';
 import { colors } from '../theme';
-import { confirm } from '../utils/dialogs';
 import { formatMoney } from '../utils/money';
 
-export default function SettingsScreen({ profile, plan, usage, onBack, onEditProfile, onUpgrade, onCancelPro, onReset }) {
-  const reset = async () => {
-    if (await confirm('Erase everything?', 'This deletes your business profile and all quotes from this device. It can’t be undone.', 'Erase', true)) onReset();
-  };
+function syncLabel(syncState) {
+  if (syncState.status === 'syncing') return ['sync', colors.sub, 'Syncing…'];
+  if (syncState.status === 'offline') return ['cloud-offline-outline', colors.accent, 'Offline — changes are saved on this device and will sync when you’re back online.'];
+  if (syncState.status === 'error') return ['alert-circle-outline', colors.danger, 'Sync ran into a problem. Your changes are safe on this device; try again shortly.'];
+  if (syncState.pending) return ['cloud-upload-outline', colors.sub, 'Changes waiting to sync.'];
+  return ['cloud-done-outline', colors.success, 'Everything is backed up.'];
+}
+
+export default function SettingsScreen({ account, profile, plan, usage, syncState, onBack, onEditProfile, onUpgrade, onManageSubscription, onSyncNow, onSignOut, onDeleteAccount }) {
+  const [deleting, setDeleting] = useState(false);
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const services = getOfferedServices(profile);
+  const [syncIcon, syncColor, syncText] = syncLabel(syncState);
+
+  const confirmDelete = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await onDeleteAccount(password);
+    } catch (failure) {
+      setError(failure.message);
+      setBusy(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Header title="Settings" onBack={onBack} />
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <SectionTitle>Business profile</SectionTitle>
         <Card>
           <Text style={styles.name}>{profile.businessName}</Text>
@@ -33,22 +53,43 @@ export default function SettingsScreen({ profile, plan, usage, onBack, onEditPro
         <SectionTitle>Plan</SectionTitle>
         <Card>
           <Text style={styles.name}>{plan.pro ? 'QuotePilot Pro' : 'Free plan'}</Text>
-          <Text style={styles.detail}>
+          <Text style={styles.detail} testID="plan-detail">
             {plan.pro
-              ? `Unlimited quotes, invoices, your branding, no QuotePilot footer.${plan.demo ? ' (Demo unlock — no charge was made.)' : ''}`
-              : `${quotesUsedThisMonth(usage)} of ${FREE_QUOTES_PER_MONTH} free quotes used this month.`}
+              ? describePlan(plan)
+              : `${describePlan(plan) ? `${describePlan(plan)} ` : ''}${quotesUsedThisMonth(usage)} of ${FREE_QUOTES_PER_MONTH} free quotes used this month.`}
           </Text>
           {plan.pro ? (
-            plan.demo ? <Row icon="refresh-outline" label="Switch back to the free plan" onPress={onCancelPro} /> : null
+            <Row icon="card-outline" label="Manage subscription & billing" onPress={onManageSubscription} />
           ) : (
             <Row icon="star" label="Upgrade to Pro" accent onPress={onUpgrade} />
           )}
         </Card>
 
-        <SectionTitle>Data</SectionTitle>
+        <SectionTitle>Account</SectionTitle>
         <Card>
-          <Text style={styles.detail}>Your profile and quotes are stored on this device only.</Text>
-          <Row icon="trash-outline" label="Erase all data" danger onPress={reset} />
+          <Text style={styles.name} testID="account-email">{account.email}</Text>
+          <View style={styles.syncRow}>
+            <Ionicons name={syncIcon} size={17} color={syncColor} />
+            <Text style={[styles.detail, { flex: 1, marginTop: 0 }]} testID="sync-status">{syncText}</Text>
+          </View>
+          <Row icon="refresh-outline" label="Sync now" onPress={onSyncNow} />
+          <Row icon="log-out-outline" label="Sign out" onPress={onSignOut} />
+          {deleting ? (
+            <View style={styles.deleteBox}>
+              <Text style={styles.deleteTitle}>Delete your account?</Text>
+              <Text style={styles.detail}>
+                This permanently deletes your profile, quotes and invoices from every device{plan.pro ? ' and cancels your subscription' : ''}. It can’t be undone.
+              </Text>
+              <Field style={{ marginTop: 12 }} label="Enter your password to confirm" secureTextEntry autoCapitalize="none" value={password} onChangeText={setPassword} />
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+              <View style={styles.deleteButtons}>
+                <Button label="Cancel" variant="ghost" style={{ flex: 1 }} onPress={() => { setDeleting(false); setPassword(''); setError(''); }} />
+                <Button testID="confirm-delete" label="Delete account" variant="danger" style={{ flex: 1.3 }} loading={busy} disabled={!password} onPress={confirmDelete} />
+              </View>
+            </View>
+          ) : (
+            <Row icon="trash-outline" label="Delete account" danger onPress={() => setDeleting(true)} />
+          )}
         </Card>
       </ScrollView>
     </SafeAreaView>
@@ -71,6 +112,11 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 16, paddingBottom: 40 },
   name: { fontSize: 18, fontWeight: '800', color: colors.ink },
   detail: { fontSize: 14, color: colors.sub, marginTop: 4, lineHeight: 20 },
+  syncRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line, minHeight: 44 },
   rowText: { flex: 1, fontSize: 15, fontWeight: '700' },
+  deleteBox: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line },
+  deleteTitle: { fontSize: 16, fontWeight: '800', color: colors.danger },
+  deleteButtons: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  error: { fontSize: 13, color: colors.danger, marginBottom: 10 },
 });

@@ -1,32 +1,50 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '../components/ui';
-import { BILLING_LIVE, FREE_QUOTES_PER_MONTH, PLANS, PRO_FEATURES, purchase, restore } from '../services/billing';
+import { FREE_QUOTES_PER_MONTH, PLANS, PRO_FEATURES, TRIAL_DAYS } from '../services/billing';
 import { colors, radius } from '../theme';
 import { notify } from '../utils/dialogs';
 
-export default function PaywallScreen({ reason, onClose, onPurchased }) {
+const REASONS = {
+  limit: `You’ve used your ${FREE_QUOTES_PER_MONTH} free quotes this month. Go Pro to keep quoting.`,
+  invoice: 'Invoices are part of Pro. Turn won jobs into invoices and track who has paid.',
+  duplicate: 'Duplicating quotes is part of Pro. Re-quote repeat jobs in seconds.',
+};
+
+// Payment happens on Stripe's checkout page in the browser. The subscription
+// is recorded by the server, so Pro appears here once the app checks back in.
+export default function PaywallScreen({ reason, plan, onClose, onCheckout, onRefresh }) {
   const [planId, setPlanId] = useState('annual');
   const [busy, setBusy] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  const trial = !plan || plan.trialAvailable !== false;
+
+  // Close by itself as soon as the account becomes Pro.
+  useEffect(() => {
+    if (plan && plan.pro) onClose();
+  }, [plan, onClose]);
 
   const buy = async () => {
     setBusy(true);
     try {
-      onPurchased(await purchase(planId));
+      await onCheckout(planId);
+      setWaiting(true);
     } catch (error) {
-      notify('Purchase didn’t go through', String(error?.message || error));
+      notify('Couldn’t start checkout', error.message);
     } finally {
       setBusy(false);
     }
   };
 
-  const restorePurchase = async () => {
-    const plan = await restore();
-    if (plan) onPurchased(plan);
-    else notify('Nothing to restore', 'We couldn’t find a previous QuotePilot Pro purchase on this account.');
+  const check = async () => {
+    setBusy(true);
+    const latest = await onRefresh();
+    setBusy(false);
+    if (!latest) notify('Couldn’t check your subscription', 'Check your connection and try again.');
+    else if (!latest.pro) notify('No subscription yet', 'We can’t see a Pro subscription on this account yet. If you just paid, give it a few seconds and check again.');
   };
 
   return (
@@ -37,11 +55,7 @@ export default function PaywallScreen({ reason, onClose, onPurchased }) {
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.badge}><Ionicons name="star" size={14} color="#fff" /><Text style={styles.badgeText}>QUOTEPILOT PRO</Text></View>
         <Text style={styles.title}>Win more jobs with quotes that look the part</Text>
-        <Text style={styles.lead}>
-          {reason === 'limit'
-            ? `You’ve used your ${FREE_QUOTES_PER_MONTH} free quotes this month. Go Pro to keep quoting.`
-            : 'Faster quotes, better-looking paperwork and invoices that get paid.'}
-        </Text>
+        <Text style={styles.lead}>{REASONS[reason] || 'Faster quotes, better-looking paperwork and invoices that get paid.'}</Text>
 
         {PRO_FEATURES.map(([icon, heading, detail]) => (
           <View key={heading} style={styles.feature}>
@@ -54,18 +68,18 @@ export default function PaywallScreen({ reason, onClose, onPurchased }) {
         ))}
 
         <View style={{ height: 10 }} />
-        {PLANS.map((plan) => {
-          const on = plan.id === planId;
+        {PLANS.map((option) => {
+          const on = option.id === planId;
           return (
-            <Pressable key={plan.id} testID={`plan-${plan.id}`} onPress={() => setPlanId(plan.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[styles.plan, on && styles.planOn]}>
+            <Pressable key={option.id} testID={`plan-${option.id}`} onPress={() => setPlanId(option.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[styles.plan, on && styles.planOn]}>
               <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={22} color={on ? colors.accent : '#7C8DA3'} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.planLabel}>{plan.label}</Text>
-                <Text style={styles.planNote}>{plan.note}</Text>
+                <Text style={styles.planLabel}>{option.label}</Text>
+                <Text style={styles.planNote}>{option.note}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                {plan.badge ? <Text style={styles.planBadge}>{plan.badge}</Text> : null}
-                <Text style={styles.planPrice}>{plan.price}<Text style={styles.planPer}> / {plan.per}</Text></Text>
+                {option.badge ? <Text style={styles.planBadge}>{option.badge}</Text> : null}
+                <Text style={styles.planPrice}>{option.price}<Text style={styles.planPer}> / {option.per}</Text></Text>
               </View>
             </Pressable>
           );
@@ -73,13 +87,21 @@ export default function PaywallScreen({ reason, onClose, onPurchased }) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button testID="purchase" label="Start 7-day free trial" variant="accent" loading={busy} onPress={buy} />
-        <Text style={styles.fine}>
-          {BILLING_LIVE
-            ? 'Free for 7 days, then billed as selected. Cancel anytime in your store account settings.'
-            : 'Demo checkout: store billing isn’t connected in this build, so Pro unlocks without a charge.'}
-        </Text>
-        <Pressable onPress={restorePurchase} accessibilityRole="button"><Text style={styles.restore}>Restore purchase</Text></Pressable>
+        {waiting ? (
+          <>
+            <Text style={styles.waiting}>Finish checkout in your browser. Pro unlocks here as soon as it’s done.</Text>
+            <Button testID="check-subscription" label="I’ve finished — check now" variant="accent" loading={busy} onPress={check} />
+            <Pressable onPress={buy} accessibilityRole="button"><Text style={styles.restore}>Open checkout again</Text></Pressable>
+          </>
+        ) : (
+          <>
+            <Button testID="purchase" label={trial ? `Start ${TRIAL_DAYS}-day free trial` : 'Subscribe'} variant="accent" loading={busy} onPress={buy} />
+            <Text style={styles.fine}>
+              {trial ? `Free for ${TRIAL_DAYS} days, then billed as selected. ` : ''}Secure checkout by Stripe. Cancel anytime from Settings.
+            </Text>
+            <Pressable testID="check-subscription" onPress={check} accessibilityRole="button"><Text style={styles.restore}>Already subscribed? Refresh</Text></Pressable>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -105,6 +127,7 @@ const styles = StyleSheet.create({
   planPrice: { fontSize: 17, fontWeight: '800', color: '#fff' },
   planPer: { fontSize: 12, fontWeight: '500', color: '#C5D2E0' },
   footer: { paddingHorizontal: 22, paddingBottom: 12 },
+  waiting: { fontSize: 14, color: '#fff', textAlign: 'center', marginBottom: 12, lineHeight: 20 },
   fine: { fontSize: 12, color: '#C5D2E0', textAlign: 'center', marginTop: 10, lineHeight: 17 },
   restore: { fontSize: 13, fontWeight: '600', color: '#fff', textAlign: 'center', paddingVertical: 12, textDecorationLine: 'underline' },
 });

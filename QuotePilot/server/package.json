@@ -1,0 +1,21 @@
+{
+  "name": "quotepilot-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch --env-file-if-exists=.env src/index.js",
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\"",
+    "stripe:setup": "node --env-file-if-exists=.env scripts/stripe-setup.js"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.4",
+    "pg": "^8.23.1",
+    "stripe": "^23.1.0"
+  }
+}

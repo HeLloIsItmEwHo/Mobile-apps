@@ -30,7 +30,8 @@
           "photosPermission": "QuotePilot uses your photos so you can add your business logo to quotes."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "scheme": "quotepilot"
   }
