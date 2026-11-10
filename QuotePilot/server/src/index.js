@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { createPool, migrate } from './db.js';
 import { createMailer } from './mailer.js';
+import { ensureStripePrices } from './stripeSetup.js';
 
 const config = loadConfig();
 const pool = createPool(config.databaseUrl);
@@ -13,6 +14,14 @@ const stripe = config.stripeSecretKey ? new Stripe(config.stripeSecretKey) : nul
 if (!stripe) console.warn('[startup] STRIPE_SECRET_KEY is not set — billing endpoints will answer 503.');
 if (stripe && !config.stripeWebhookSecret) console.warn('[startup] STRIPE_WEBHOOK_SECRET is not set — subscriptions will not activate.');
 if (!config.resendApiKey) console.warn('[startup] RESEND_API_KEY is not set — password reset emails are printed here instead of sent.');
+
+// Opt-in: create the Pro product and prices in Stripe if they are missing.
+// A failure here is logged and never stops the server from starting.
+if (stripe && config.stripeAutoSetup) {
+  ensureStripePrices(stripe)
+    .then((report) => report.forEach((line) => console.log(`[stripe setup] ${line}`)))
+    .catch((error) => console.error('[stripe setup] failed:', error.message));
+}
 
 const app = createApp({ pool, config, stripe, mailer: createMailer(config) });
 const server = app.listen(config.port, () => console.log(`QuotePilot API listening on :${config.port}`));

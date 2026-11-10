@@ -12,6 +12,7 @@ export function loadConfig(env = process.env) {
     trustProxy: env.TRUST_PROXY ? Number(env.TRUST_PROXY) || env.TRUST_PROXY : false,
     stripeSecretKey: env.STRIPE_SECRET_KEY || '',
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || '',
+    stripeAutoSetup: env.STRIPE_AUTO_SETUP === '1' || env.STRIPE_AUTO_SETUP === 'true',
     resendApiKey: env.RESEND_API_KEY || '',
     mailFrom: env.MAIL_FROM || 'QuotePilot <no-reply@example.com>',
     trialDays: Number(env.TRIAL_DAYS ?? 7),

@@ -63,6 +63,8 @@ In the [Stripe dashboard](https://dashboard.stripe.com), copy your secret key (s
 STRIPE_SECRET_KEY=sk_test_... npm run stripe:setup
 ```
 
+Or, with nothing to install: set `STRIPE_AUTO_SETUP=1` on the server and it does the same thing each time it starts (look for `[stripe setup]` in the log).
+
 This creates the "QuotePilot Pro" product with two prices: **$164.99/month** and **$1,649.90/year**. The server finds them by lookup key (`quotepilot_pro_monthly`, `quotepilot_pro_annual`), so there are no price IDs to configure. To change a price later, create a new price in the dashboard and transfer the lookup key to it — and update the display prices in `QuotePilot/src/services/billing.js` to match.
 
 ### 4. Stripe webhook
